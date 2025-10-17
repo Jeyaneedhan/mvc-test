@@ -1,0 +1,100 @@
+CREATE DATABASE mvc_db;
+
+CREATE TABLE users (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    user_type ENUM('admin', 'landlord', 'tenant', 'property_manager') NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+// Properties Table (for Landlord CRUD) 
+
+CREATE TABLE properties (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    landlord_id INT NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    address TEXT NOT NULL,
+    type ENUM('apartment', 'house', 'condo', 'townhouse') NOT NULL,
+    bedrooms INT NOT NULL,
+    bathrooms DECIMAL(2,1) NOT NULL,
+    sqft INT,
+    rent DECIMAL(10,2) NOT NULL,
+    deposit DECIMAL(10,2),
+    description TEXT,
+    status ENUM('available', 'occupied', 'maintenance') DEFAULT 'available',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (landlord_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+// Service Providers Table (for Admin CRUD)
+
+CREATE TABLE service_providers (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    company VARCHAR(100),
+    specialty ENUM('plumbing', 'electrical', 'hvac', 'general', 'cleaning', 'landscaping') NOT NULL,
+    phone VARCHAR(20),
+    email VARCHAR(100),
+    address TEXT,
+    rating DECIMAL(3,2) DEFAULT 0.00,
+    status ENUM('active', 'inactive') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+// Tenants Table (for PM CRUD - Option 1) 
+
+CREATE TABLE tenants (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    property_id INT NOT NULL,
+    manager_id INT NOT NULL,
+    lease_start DATE,
+    lease_end DATE,
+    monthly_rent DECIMAL(10,2),
+    status ENUM('active', 'inactive', 'pending') DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (property_id) REFERENCES properties(id),
+    FOREIGN KEY (manager_id) REFERENCES users(id)
+);
+
+// (for PM CRUD - Option 2)
+
+CREATE TABLE property_inspections (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    property_id INT NOT NULL,
+    manager_id INT NOT NULL,
+    inspection_type ENUM('routine', 'move_in', 'move_out', 'maintenance', 'emergency') NOT NULL,
+    scheduled_date DATE NOT NULL,
+    completed_date DATE NULL,
+    status ENUM('scheduled', 'in_progress', 'completed', 'cancelled') DEFAULT 'scheduled',
+    notes TEXT,
+    issues_found TEXT,
+    follow_up_required BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE,
+    FOREIGN KEY (manager_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+// Maintenance_requests Table (for Tenant CRUD) 
+
+CREATE TABLE maintenance_requests (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    tenant_id INT NOT NULL,
+    property_id INT NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    description TEXT NOT NULL,
+    category ENUM('plumbing', 'electrical', 'hvac', 'general', 'emergency'),
+    priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium',
+    status ENUM('pending', 'in_progress', 'completed', 'cancelled') DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (tenant_id) REFERENCES users(id),
+    FOREIGN KEY (property_id) REFERENCES properties(id)
+);
